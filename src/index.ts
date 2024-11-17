@@ -1,4 +1,3 @@
-// src/index.ts
 import express from 'express';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
@@ -69,13 +68,16 @@ app.post('/convert', async (req, res) => {
     const converter = new NotionToMediumConverter(req.body);
 
     // Convert content
-    console.log('Converting content...');
-    const mediumContent = await converter.convert();
+    // console.log('Converting content...');
+    // const mediumContent = await converter.convert();
 
-    console.log('Conversion successful');
-    console.log('Result:', JSON.stringify(mediumContent, null, 2));
+    // console.log('Conversion successful');
+    // console.log('Result:', JSON.stringify(mediumContent, null, 2));
 
-    return res.status(200).json(mediumContent);
+    // return res.status(200).json(mediumContent);
+    const mdblocks = await n2m.pageToMarkdown("target_page_id");
+    const mdString = n2m.toMarkdownString(mdblocks);
+    return res.status(200).json(mdString);
   } catch (error) {
     console.error('Error during conversion:', error);
     return res.status(500).json({
@@ -94,4 +96,22 @@ curl -X POST http://localhost:${port}/convert \\
   -H "Content-Type: application/json" \\
   -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
   `);
+});
+
+const { Client } = require("@notionhq/client");
+const { NotionToMarkdown } = require("notion-to-md");
+const fs = require('fs');
+// or
+// import {NotionToMarkdown} from "notion-to-md";
+
+const notion = new Client({
+  auth: "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",
+});
+
+// passing notion client to the option
+const n2m = new NotionToMarkdown({
+  notionClient: notion,
+  config: {
+    separateChildPage: true, // default: false
+  }
 });
