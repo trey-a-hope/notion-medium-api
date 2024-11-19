@@ -40,14 +40,11 @@ app.get('/health', (_req, res) => {
 
 app.post('/convert', async (req, res) => {
   try {
-
     // Sample usage with your JSON
     const notionData = req.body;
     const mediumContent = converter.convertToMedium(notionData);
 
-
     return res.status(200).json(mediumContent);
-
   } catch (error) {
     console.error('Error during conversion:', error);
     return res.status(500).json({
