@@ -63,8 +63,8 @@ class NotionToMediumHTML {
         const article = blocks
             .map(block => this.processBlock(block))
             .filter(Boolean)
-            .join('\n\n');
-        return `${article}`;
+            .join('');
+        return `<!DOCTYPE html><html><body>${article}</body></html>`;
     }
     processBlock(block) {
         switch (block.type) {
@@ -93,7 +93,6 @@ class NotionToMediumHTML {
     }
     formatText(text) {
         let content = this.escapeHtml(text.text.content);
-        // Apply HTML formatting based on annotations
         if (text.annotations.bold) {
             content = `<strong>${content}</strong>`;
         }

@@ -64,7 +64,6 @@ curl -X POST http://localhost:${port}/convert \\
   -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
   `);
 });
-
 interface NotionText {
   type: string;
   text: {
@@ -102,9 +101,9 @@ class NotionToMediumHTML {
     const article = blocks
       .map(block => this.processBlock(block))
       .filter(Boolean)
-      .join('\n\n');
+      .join('');
 
-    return `${article}`;
+    return `<!DOCTYPE html><html><body>${article}</body></html>`;
   }
 
   private processBlock(block: NotionBlock): string {
@@ -141,7 +140,6 @@ class NotionToMediumHTML {
   private formatText(text: NotionText): string {
     let content = this.escapeHtml(text.text.content);
 
-    // Apply HTML formatting based on annotations
     if (text.annotations.bold) {
       content = `<strong>${content}</strong>`;
     }
