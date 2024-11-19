@@ -60,3 +60,20 @@ export interface NotionBlock {
     caption: any[];
   };
 }
+
+/**
+ * Interface for Notion image block structure
+ */
+export interface NotionImageBlock {
+  image: {
+    file?: {
+      url: string;
+      expiry_time: string;
+    };
+    caption?: Array<{
+      text?: {
+        content: string;
+      };
+    }>;
+  };
+}
