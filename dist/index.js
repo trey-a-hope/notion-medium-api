@@ -35,37 +35,10 @@ app.get('/health', (_req, res) => {
 });
 app.post('/convert', async (req, res) => {
     try {
-        // console.log('Processing request...');
-        // // Validate request body
-        // if (!req.body) {
-        //   console.log('No request body found');
-        //   return res.status(400).json({
-        //     error: 'Missing request body'
-        //   });
-        // }
-        // // Log the received data
-        // console.log('Received body:', JSON.stringify(req.body, null, 2));
-        // // Validate blocks array
-        // if (!req.body.blocks || !Array.isArray(req.body.blocks)) {
-        //   console.log('Invalid blocks array');
-        //   return res.status(400).json({
-        //     error: 'Invalid input',
-        //     message: 'Request must contain a blocks array',
-        //     received: req.body
-        //   });
-        // }
-        // // Create converter
-        // console.log('Creating converter...');
-        // const converter = new NotionToMediumConverter(req.body);
-        // // Convert content
-        // console.log('Converting content...');
-        // const mediumContent = await converter.convert();
-        // console.log('Conversion successful');
-        // console.log('Result:', JSON.stringify(mediumContent, null, 2));
-        // Usage example:
-        const json = req.body;
-        const markdown = convertNotionToMarkdown(json);
-        return res.status(200).json(markdown);
+        // Sample usage with your JSON
+        const notionData = req.body;
+        const mediumContent = converter.convertToMedium(notionData);
+        return res.status(200).json(mediumContent);
     }
     catch (error) {
         console.error('Error during conversion:', error);
@@ -85,33 +58,55 @@ curl -X POST http://localhost:${port}/convert \\
   -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
   `);
 });
-const convertNotionToMarkdown = (blocks) => {
-    return blocks.map(block => {
+class NotionToMedium {
+    convertToMedium(blocks) {
+        return blocks
+            .map(block => this.processBlock(block))
+            .filter(Boolean)
+            .join('\n\n');
+    }
+    processBlock(block) {
         switch (block.type) {
-            case 'paragraph': {
-                if (!block.paragraph)
-                    return '';
-                const text = block.paragraph.rich_text.map(t => {
-                    const content = t.plain_text;
-                    return t.annotations.bold ? `**${content}**` : content;
-                }).join('');
-                return text;
-            }
-            case 'heading_1': {
-                if (!block.heading_1)
-                    return '';
-                const text = block.heading_1.rich_text[0].plain_text;
-                return `# ${text}`;
-            }
-            case 'code': {
-                if (!block.code)
-                    return '';
-                const code = block.code.rich_text[0].plain_text;
-                const lang = block.code.language;
-                return `\`\`\`${lang}\n${code}\n\`\`\``;
-            }
+            case 'paragraph':
+                return this.processParagraph(block.paragraph?.rich_text || []);
+            case 'heading_1':
+                return this.processHeading(block.heading_1?.rich_text || []);
+            case 'code':
+                return this.processCode(block.code);
             default:
                 return '';
         }
-    }).filter(Boolean).join('\n\n');
-};
+    }
+    processParagraph(richText) {
+        return richText.map(text => this.formatText(text)).join('');
+    }
+    processHeading(richText) {
+        return `# ${richText.map(text => this.formatText(text)).join('')}`;
+    }
+    processCode(code) {
+        if (!code?.rich_text?.[0])
+            return '';
+        const content = code.rich_text[0].plain_text;
+        const language = code.language || '';
+        return `\`\`\`${language}\n${content}\n\`\`\``;
+    }
+    formatText(text) {
+        let content = text.text.content;
+        // Apply formatting based on annotations
+        if (text.annotations.bold) {
+            content = `**${content}**`;
+        }
+        if (text.annotations.italic) {
+            content = `*${content}*`;
+        }
+        if (text.annotations.code) {
+            content = `\`${content}\``;
+        }
+        if (text.annotations.strikethrough) {
+            content = `~~${content}~~`;
+        }
+        return content;
+    }
+}
+// Example usage:
+const converter = new NotionToMedium();
