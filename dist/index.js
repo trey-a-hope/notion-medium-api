@@ -64,13 +64,7 @@ class NotionToMediumHTML {
             .map(block => this.processBlock(block))
             .filter(Boolean)
             .join('\n\n');
-        return `
-<!DOCTYPE html>
-<html>
-<body>
-${article}
-</body>
-</html>`;
+        return `${article}`;
     }
     processBlock(block) {
         switch (block.type) {
