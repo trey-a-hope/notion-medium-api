@@ -54,16 +54,54 @@ class NotionToMediumHTML {
         return richText.map(text => text.plain_text).join('');
     }
     /**
-     * Processes a code block with language-specific formatting
+     * Processes a code block with syntax highlighting
      * @param code Code block data containing content and language
-     * @returns HTML string with formatted code content
+     * @returns HTML string with syntax-highlighted code
      */
     processCode(code) {
         if (!code?.rich_text?.[0])
             return '';
         const content = code.rich_text[0].plain_text;
         const language = code.language || '';
-        return `<pre data-language="${language}"><code>${html_utils_1.HtmlUtils.escapeHtml(content)}</code></pre>`;
+        // Add syntax highlighting classes
+        return `
+    <pre class="code-block" data-language="${language}">
+      <code class="language-${language} syntax-highlighted">
+        ${this.applySyntaxHighlighting(content, language)}
+      </code>
+    </pre>
+    <style>
+      .code-block {
+        background-color: #ffffff;
+        padding: 1em;
+        border-radius: 4px;
+        margin: 1em 0;
+      }
+      .syntax-highlighted .keyword { color: #9333ea; }  /* Purple for keywords */
+      .syntax-highlighted .function { color: #2563eb; } /* Blue for functions */
+      .syntax-highlighted .punctuation { color: #000000; } /* Black for punctuation */
+    </style>
+  `;
+    }
+    /**
+     * Applies syntax highlighting to code content
+     * @param content Raw code content
+     * @param language Programming language
+     * @returns HTML with syntax highlighting spans
+     */
+    applySyntaxHighlighting(content, language) {
+        // First escape HTML special characters
+        let processedContent = html_utils_1.HtmlUtils.escapeHtml(content);
+        // Apply syntax highlighting based on language
+        if (language === 'cpp' || language === 'c' || language === 'java') {
+            // Keywords
+            processedContent = processedContent.replace(/(void|int|char|double|float|bool|class|struct|public|private|protected)\b/g, '<span class="keyword">$1</span>');
+            // Function names
+            processedContent = processedContent.replace(/\b(main)\b/g, '<span class="function">$1</span>');
+            // Punctuation
+            processedContent = processedContent.replace(/([(){}[\];])/g, '<span class="punctuation">$1</span>');
+        }
+        return processedContent;
     }
     /**
      * Applies text formatting annotations to a single text segment
