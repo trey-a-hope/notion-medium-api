@@ -1,4 +1,4 @@
-import { NotionBlock, NotionText, NotionImageBlock } from './types';
+import { NotionBlock, NotionText } from './types';
 import { HtmlUtils } from './html.utils';
 
 /**
@@ -37,9 +37,6 @@ export class NotionToMediumHTML {
       case 'code':
         return this.processCode(block.code);
 
-      case 'image':
-        return this.processImage(block as unknown as NotionImageBlock);
-
       default:
         return ''; // Unsupported block types are skipped
     }
@@ -73,36 +70,6 @@ export class NotionToMediumHTML {
     const content = code.rich_text[0].plain_text;
     const language = code.language || '';
     return `<pre data-language="${language}"><code>${HtmlUtils.escapeHtml(content)}</code></pre>`;
-  }
-
-  /**
- * Processes an image block from Notion
- * Converts it to Medium-compatible HTML with optional caption
- * @param block The Notion image block to process
- * @returns HTML string for the image with optional caption
- */
-  private processImage(block: NotionImageBlock): string {
-    if (!block?.image?.file?.url) return '';
-
-    // Get the image URL
-    const imageUrl = block.image.file.url;
-
-    // Process caption if it exists
-    let caption = '';
-    if (block.image.caption && block.image.caption.length > 0) {
-      const captionText = block.image.caption[0]?.text?.content || '';
-      if (captionText) {
-        caption = `<figcaption>${HtmlUtils.escapeHtml(captionText)}</figcaption>`;
-      }
-    }
-
-    // Return figure element with image and optional caption
-    return `
-    <figure>
-      <img src="${HtmlUtils.escapeHtml(imageUrl)}" alt="${caption ? HtmlUtils.escapeHtml(caption) : ''}" />
-      ${caption}
-    </figure>
-  `.trim();
   }
 
   /**
