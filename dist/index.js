@@ -55,71 +55,9 @@ app.post('/convert', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Test the API with:`);
-    console.log(`
-curl -X POST http://localhost:${port}/convert \\
-  -H "Content-Type: application/json" \\
-  -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
-  `);
+    //   console.log(`
+    // curl -X POST http://localhost:${port}/convert \\
+    //   -H "Content-Type: application/json" \\
+    //   -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
+    //   `);
 });
-// class NotionToMediumHTML {
-//   convertToMediumHTML(blocks: NotionBlock[]): string {
-//     const article = blocks
-//       .map(block => this.processBlock(block))
-//       .filter(Boolean)
-//       .join('');
-//     return `${article}`;
-//   }
-//   private processBlock(block: NotionBlock): string {
-//     switch (block.type) {
-//       case 'paragraph':
-//         return `<p>${this.processParagraph(block.paragraph?.rich_text || [])}</p>`;
-//       case 'heading_1':
-//         return `<h1>${this.processText(block.heading_1?.rich_text || [])}</h1>`;
-//       case 'code':
-//         return this.processCode(block.code);
-//       default:
-//         return '';
-//     }
-//   }
-//   private processParagraph(richText: NotionText[]): string {
-//     return richText.map(text => this.formatText(text)).join('');
-//   }
-//   private processText(richText: NotionText[]): string {
-//     return richText.map(text => text.plain_text).join('');
-//   }
-//   private processCode(code: any): string {
-//     if (!code?.rich_text?.[0]) return '';
-//     const content = code.rich_text[0].plain_text;
-//     const language = code.language || '';
-//     return `<pre data-language="${language}"><code>${this.escapeHtml(content)}</code></pre>`;
-//   }
-//   private formatText(text: NotionText): string {
-//     let content = this.escapeHtml(text.text.content);
-//     if (text.annotations.bold) {
-//       content = `<strong>${content}</strong>`;
-//     }
-//     if (text.annotations.italic) {
-//       content = `<em>${content}</em>`;
-//     }
-//     if (text.annotations.code) {
-//       content = `<code>${content}</code>`;
-//     }
-//     if (text.annotations.strikethrough) {
-//       content = `<del>${content}</del>`;
-//     }
-//     if (text.annotations.underline) {
-//       content = `<u>${content}</u>`;
-//     }
-//     return content;
-//   }
-//   private escapeHtml(unsafe: string): string {
-//     return unsafe
-//       .replace(/&/g, "&amp;")
-//       .replace(/</g, "&lt;")
-//       .replace(/>/g, "&gt;")
-//       .replace(/"/g, "&quot;")
-//       .replace(/'/g, "&#039;");
-//   }
-// }
-// // Example usage:
-// const converter = new NotionToMediumHTML();

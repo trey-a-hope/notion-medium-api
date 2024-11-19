@@ -7,7 +7,7 @@ class NotionToMediumHTML {
         const article = blocks
             .map(block => this.processBlock(block))
             .filter(Boolean)
-            .join('');
+            .join('\n\n');
         return `${article}`;
     }
     processBlock(block) {
