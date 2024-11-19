@@ -1,112 +1,66 @@
-import { NotionBlock, NotionExport, MediumContent } from './types';
+import { NotionBlock, NotionText } from './types';
+import { HtmlUtils } from './html.utils';
 
-export class NotionToMediumConverter {
-  private notionData: NotionExport;
-  private mediumContent: MediumContent = {
-    title: '',
-    contentFormat: 'html',
-    content: '',
-    tags: [],
-    publishStatus: 'draft'
-  };
+export class NotionToMediumHTML {
+  convertToMediumHTML(blocks: NotionBlock[]): string {
+    const article = blocks
+      .map(block => this.processBlock(block))
+      .filter(Boolean)
+      .join('');
 
-  constructor(notionData: NotionExport) {
-    this.notionData = notionData;
+    return `${article}`;
   }
 
-  private convertBlock(block: NotionBlock): string {
-    const content = block.properties?.title?.[0]?.[0] || '';
-    
+  private processBlock(block: NotionBlock): string {
     switch (block.type) {
-      case 'header':
-        return `<h1>${content}</h1>`;
-      case 'sub_header':
-        return `<h2>${content}</h2>`;
-      case 'sub_sub_header':
-        return `<h3>${content}</h3>`;
-      case 'numbered_list':
-        return `<li>${content}</li>`;
-      case 'bulleted_list':
-        return `<li>${content}</li>`;
+      case 'paragraph':
+        return `<p>${this.processParagraph(block.paragraph?.rich_text || [])}</p>`;
+
+      case 'heading_1':
+        return `<h1>${this.processText(block.heading_1?.rich_text || [])}</h1>`;
+
       case 'code':
-        const language = block.properties?.language?.[0]?.[0] || 'text';
-        return `<pre><code class="language-${language}">${content}</code></pre>`;
-      case 'quote':
-        return `<blockquote>${content}</blockquote>`;
-      case 'image':
-        const caption = block.properties?.caption?.[0]?.[0] || '';
-        const url = block.properties?.source?.[0]?.[0] || '';
-        return `<figure><img src="${url}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`;
-      case 'text':
-        return content ? `<p>${content}</p>` : '<br>';
+        return this.processCode(block.code);
+
       default:
-        return `<p>${content}</p>`;
+        return '';
     }
   }
 
-  private processLists(htmlContent: string): string {
-    // Since we're in a Node.js environment, we'll use a simple string-based approach
-    // instead of DOM manipulation
-    let processedContent = htmlContent;
-    
-    // Find consecutive <li> elements and wrap them in appropriate list tags
-    const wrapLists = (content: string): string => {
-      const liRegex = /<li>.*?<\/li>/g;
-      const matches = content.match(liRegex);
-      
-      if (!matches) return content;
-      
-      let result = content;
-      let currentList = '';
-      let isProcessingList = false;
-      
-      matches.forEach((li, index) => {
-        const nextLi = matches[index + 1];
-        
-        if (!isProcessingList) {
-          currentList = li;
-          isProcessingList = true;
-        } else {
-          currentList += li;
-        }
-        
-        if (!nextLi || !content.substring(
-          content.indexOf(li) + li.length,
-          content.indexOf(nextLi)
-        ).trim()) {
-          // Wrap the list items
-          const wrapper = `<ul>${currentList}</ul>`;
-          result = result.replace(currentList, wrapper);
-          isProcessingList = false;
-          currentList = '';
-        }
-      });
-      
-      return result;
-    };
-    
-    processedContent = wrapLists(processedContent);
-    return processedContent;
+  private processParagraph(richText: NotionText[]): string {
+    return richText.map(text => this.formatText(text)).join('');
   }
 
-  public async convert(): Promise<MediumContent> {
-    try {
-      const titleBlock = this.notionData.blocks.find(block => block.type === 'header');
-      if (titleBlock?.properties?.title) {
-        this.mediumContent.title = titleBlock.properties.title[0][0];
-      }
+  private processText(richText: NotionText[]): string {
+    return richText.map(text => text.plain_text).join('');
+  }
 
-      const htmlContent = this.notionData.blocks
-        .map(block => this.convertBlock(block))
-        .join('\n');
+  private processCode(code: any): string {
+    if (!code?.rich_text?.[0]) return '';
+    const content = code.rich_text[0].plain_text;
+    const language = code.language || '';
+    return `<pre data-language="${language}"><code>${HtmlUtils.escapeHtml(content)}</code></pre>`;
+  }
 
-      this.mediumContent.content = this.processLists(htmlContent)
-        .replace(/\n+/g, '\n')
-        .trim();
+  private formatText(text: NotionText): string {
+    let content = HtmlUtils.escapeHtml(text.text.content);
 
-      return this.mediumContent;
-    } catch (error) {
-      throw new Error(`Conversion failed: ${error}`);
+    if (text.annotations.bold) {
+      content = `<strong>${content}</strong>`;
     }
+    if (text.annotations.italic) {
+      content = `<em>${content}</em>`;
+    }
+    if (text.annotations.code) {
+      content = `<code>${content}</code>`;
+    }
+    if (text.annotations.strikethrough) {
+      content = `<del>${content}</del>`;
+    }
+    if (text.annotations.underline) {
+      content = `<u>${content}</u>`;
+    }
+
+    return content;
   }
 }

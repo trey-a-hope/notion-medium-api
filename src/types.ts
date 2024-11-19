@@ -1,21 +1,31 @@
-export interface NotionBlock {
-    type: string;
-    properties?: {
-      title?: Array<Array<string>>;
-      language?: Array<Array<string>>;
-      caption?: Array<Array<string>>;
-      source?: Array<Array<string>>;
-    };
-  }
-  
-  export interface NotionExport {
-    blocks: NotionBlock[];
-  }
-  
-  export interface MediumContent {
-    title: string;
-    contentFormat: string;
+export interface NotionText {
+  type: string;
+  text: {
     content: string;
-    tags: string[];
-    publishStatus: string;
-  }
+    link: null | string;
+  };
+  annotations: {
+    bold: boolean;
+    italic: boolean;
+    strikethrough: boolean;
+    underline: boolean;
+    code: boolean;
+    color: string;
+  };
+  plain_text: string;
+}
+
+export interface NotionBlock {
+  type: string;
+  paragraph?: {
+    rich_text: NotionText[];
+  };
+  heading_1?: {
+    rich_text: NotionText[];
+  };
+  code?: {
+    rich_text: NotionText[];
+    language: string;
+    caption: any[];
+  };
+}

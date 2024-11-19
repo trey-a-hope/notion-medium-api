@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
-import { NotionToMediumConverter } from './converter';
-import { NotionExport } from './types';
+import { NotionBlock } from './types';
+import { NotionToMediumHTML } from './converter';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,7 +21,6 @@ app.use(cors());
 app.use((req, _res, next) => {
   console.log('=== Request Details ===');
   console.log('Headers:', req.headers);
-  // console.log('Raw Body:', req.body);
   console.log('Parsed Body:', req.body);
   console.log('====================');
   next();
@@ -40,11 +39,13 @@ app.get('/health', (_req, res) => {
 
 app.post('/convert', async (req, res) => {
   try {
-    // Sample usage with your JSON
-    const notionData = req.body;
-    const mediumHtml = converter.convertToMediumHTML(notionData);
+    // const notionData = req.body;
+    // const mediumHtml = converter.convertToMediumHTML(notionData);
+    const converter = new NotionToMediumHTML();
+    const notionData: NotionBlock[] = req.body;
+    const html = converter.convertToMediumHTML(notionData);
 
-    return res.status(200).json(mediumHtml);
+    return res.status(200).json(html);
   } catch (error) {
     console.error('Error during conversion:', error);
     return res.status(500).json({
@@ -55,6 +56,7 @@ app.post('/convert', async (req, res) => {
   }
 });
 
+// TODO Remove this app.listen.
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Test the API with:`);
@@ -64,110 +66,79 @@ curl -X POST http://localhost:${port}/convert \\
   -d '{"blocks":[{"type":"header","properties":{"title":[["Test Title"]]}}]}'
   `);
 });
-interface NotionText {
-  type: string;
-  text: {
-    content: string;
-    link: null | string;
-  };
-  annotations: {
-    bold: boolean;
-    italic: boolean;
-    strikethrough: boolean;
-    underline: boolean;
-    code: boolean;
-    color: string;
-  };
-  plain_text: string;
-}
 
-interface NotionBlock {
-  type: string;
-  paragraph?: {
-    rich_text: NotionText[];
-  };
-  heading_1?: {
-    rich_text: NotionText[];
-  };
-  code?: {
-    rich_text: NotionText[];
-    language: string;
-    caption: any[];
-  };
-}
+// class NotionToMediumHTML {
+//   convertToMediumHTML(blocks: NotionBlock[]): string {
+//     const article = blocks
+//       .map(block => this.processBlock(block))
+//       .filter(Boolean)
+//       .join('');
 
-class NotionToMediumHTML {
-  convertToMediumHTML(blocks: NotionBlock[]): string {
-    const article = blocks
-      .map(block => this.processBlock(block))
-      .filter(Boolean)
-      .join('');
+//     return `${article}`;
+//   }
 
-    return `${article}`;
-  }
+//   private processBlock(block: NotionBlock): string {
+//     switch (block.type) {
+//       case 'paragraph':
+//         return `<p>${this.processParagraph(block.paragraph?.rich_text || [])}</p>`;
 
-  private processBlock(block: NotionBlock): string {
-    switch (block.type) {
-      case 'paragraph':
-        return `<p>${this.processParagraph(block.paragraph?.rich_text || [])}</p>`;
+//       case 'heading_1':
+//         return `<h1>${this.processText(block.heading_1?.rich_text || [])}</h1>`;
 
-      case 'heading_1':
-        return `<h1>${this.processText(block.heading_1?.rich_text || [])}</h1>`;
+//       case 'code':
+//         return this.processCode(block.code);
 
-      case 'code':
-        return this.processCode(block.code);
+//       default:
+//         return '';
+//     }
+//   }
 
-      default:
-        return '';
-    }
-  }
+//   private processParagraph(richText: NotionText[]): string {
+//     return richText.map(text => this.formatText(text)).join('');
+//   }
 
-  private processParagraph(richText: NotionText[]): string {
-    return richText.map(text => this.formatText(text)).join('');
-  }
+//   private processText(richText: NotionText[]): string {
+//     return richText.map(text => text.plain_text).join('');
+//   }
 
-  private processText(richText: NotionText[]): string {
-    return richText.map(text => text.plain_text).join('');
-  }
+//   private processCode(code: any): string {
+//     if (!code?.rich_text?.[0]) return '';
+//     const content = code.rich_text[0].plain_text;
+//     const language = code.language || '';
+//     return `<pre data-language="${language}"><code>${this.escapeHtml(content)}</code></pre>`;
+//   }
 
-  private processCode(code: any): string {
-    if (!code?.rich_text?.[0]) return '';
-    const content = code.rich_text[0].plain_text;
-    const language = code.language || '';
-    return `<pre data-language="${language}"><code>${this.escapeHtml(content)}</code></pre>`;
-  }
+//   private formatText(text: NotionText): string {
+//     let content = this.escapeHtml(text.text.content);
 
-  private formatText(text: NotionText): string {
-    let content = this.escapeHtml(text.text.content);
+//     if (text.annotations.bold) {
+//       content = `<strong>${content}</strong>`;
+//     }
+//     if (text.annotations.italic) {
+//       content = `<em>${content}</em>`;
+//     }
+//     if (text.annotations.code) {
+//       content = `<code>${content}</code>`;
+//     }
+//     if (text.annotations.strikethrough) {
+//       content = `<del>${content}</del>`;
+//     }
+//     if (text.annotations.underline) {
+//       content = `<u>${content}</u>`;
+//     }
 
-    if (text.annotations.bold) {
-      content = `<strong>${content}</strong>`;
-    }
-    if (text.annotations.italic) {
-      content = `<em>${content}</em>`;
-    }
-    if (text.annotations.code) {
-      content = `<code>${content}</code>`;
-    }
-    if (text.annotations.strikethrough) {
-      content = `<del>${content}</del>`;
-    }
-    if (text.annotations.underline) {
-      content = `<u>${content}</u>`;
-    }
+//     return content;
+//   }
 
-    return content;
-  }
+//   private escapeHtml(unsafe: string): string {
+//     return unsafe
+//       .replace(/&/g, "&amp;")
+//       .replace(/</g, "&lt;")
+//       .replace(/>/g, "&gt;")
+//       .replace(/"/g, "&quot;")
+//       .replace(/'/g, "&#039;");
+//   }
+// }
 
-  private escapeHtml(unsafe: string): string {
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-}
-
-// Example usage:
-const converter = new NotionToMediumHTML();
+// // Example usage:
+// const converter = new NotionToMediumHTML();
