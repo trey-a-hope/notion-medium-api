@@ -65,7 +65,7 @@ app.post('/convert', async (req, res) => {
         // Usage example:
         const json = req.body;
         const markdown = convertNotionToMarkdown(json);
-        return res.status(200).json(markdown);
+        return res.status(200).json(req.body);
     }
     catch (error) {
         console.error('Error during conversion:', error);
