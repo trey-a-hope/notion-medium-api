@@ -79,7 +79,7 @@ app.post('/convert', async (req, res) => {
     const markdown = convertNotionToMarkdown(json);
 
 
-    return res.status(200).json(req.body);
+    return res.status(200).json(markdown);
 
   } catch (error) {
     console.error('Error during conversion:', error);
