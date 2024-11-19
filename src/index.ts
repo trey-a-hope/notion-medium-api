@@ -103,7 +103,7 @@ class NotionToMediumHTML {
       .filter(Boolean)
       .join('');
 
-    return `<!DOCTYPE html><html><body>${article}</body></html>`;
+    return `${article}`;
   }
 
   private processBlock(block: NotionBlock): string {
