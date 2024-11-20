@@ -1,24 +1,13 @@
-// Import required dependencies
 import express from 'express';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
-// import { NotionBlock } from './types';
-import { NotionToMediumHTML } from './converter';
 const { Client } = require('@notionhq/client');
-const router = express.Router();
-import { NotionToMarkdown } from "notion-to-md";
-
-
 const notion = new Client({ auth: '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' });
-const n2m = new NotionToMarkdown({ notionClient: notion });
 
-
-// Initialize Express application
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure JSON parsing middleware with a 10MB limit
-// Store raw body buffer for potential webhook verification
+
 app.use(express.json({
   limit: '10mb',
   verify: (req: any, _res, buf) => {
@@ -26,11 +15,9 @@ app.use(express.json({
   }
 }));
 
-// Enable Cross-Origin Resource Sharing (CORS)
 app.use(cors());
 
-// Logging middleware to debug incoming requests
-// Logs headers and parsed body for every request
+
 app.use((req, _res, next) => {
   console.log('=== Request Details ===');
   console.log('Headers:', req.headers);
@@ -55,33 +42,17 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'OK' });
 });
 
-// Main conversion endpoint
-// Accepts Notion blocks and converts them to Medium-compatible HTML
+
 app.post('/convert', async (req, res) => {
   try {
-    // // Initialize the converter
-    // const converter = new NotionToMediumHTML();
-
-    // // Extract Notion blocks from request body
-    // const notionData: NotionBlock[] = req.body;
-
-    // // Convert Notion blocks to Medium HTML format
-    // const html = converter.convertToMediumHTML(notionData);
-
-    // const html = await getPage();
-    // const ress = await getPage();
-
-    // Return the converted HTML
-    // return res.status(200).json(html);
+    // TODO: Extract the pageID from the previous module...
     // const { pageId } = req.params;
 
     const html = await getNestedBlocks('141515c4ebd880bdb52ccc888df6d202');
     res.status(200).send(html);
   } catch (error) {
-    // Log any conversion errors
     console.error('Error during conversion:', error);
 
-    // Return error response with the received body for debugging
     return res.status(500).json({
       error: error,
       receivedBody: req.body
@@ -89,51 +60,12 @@ app.post('/convert', async (req, res) => {
   }
 });
 
-// Start the server and log useful information
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Test the API with:`);
 });
 
-interface NotionBlock {
-  type: string;
-  paragraph?: {
-    rich_text: RichText[];
-  };
-  heading_1?: {
-    rich_text: RichText[];
-  };
-  heading_2?: {
-    rich_text: RichText[];
-  };
-  heading_3?: {
-    rich_text: RichText[];
-  };
-  bulleted_list_item?: {
-    rich_text: RichText[];
-  };
-  numbered_list_item?: {
-    rich_text: RichText[];
-  };
-  to_do?: {
-    rich_text: RichText[];
-    checked: boolean;
-  };
-  code?: {
-    rich_text: RichText[];
-    language: string;
-  };
-  image?: {
-    type: 'external' | 'file';
-    external?: { url: string };
-    file?: { url: string };
-  };
-}
 
-interface RichText {
-  plain_text: string;
-}
-// Handle rich text to HTML, including styling
 const richTextToHtml = (richText: any[]): string => {
   return richText.map(text => {
     let content = text.plain_text;
