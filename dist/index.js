@@ -53,10 +53,11 @@ app.post('/convert', async (req, res) => {
         // const notionData: NotionBlock[] = req.body;
         // // Convert Notion blocks to Medium HTML format
         // const html = converter.convertToMediumHTML(notionData);
-        const html = await getPage();
+        // const html = await getPage();
+        await getPage();
         // Return the converted HTML
         // return res.status(200).json(html);
-        return res.status(200).send(html);
+        return res.status(200).send('Got it!');
     }
     catch (error) {
         // Log any conversion errors
@@ -74,7 +75,6 @@ app.listen(port, () => {
     console.log(`Test the API with:`);
 });
 async function getPage() {
-    const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/asnunes/Simple-Page-Text-4d64bbc0634d4758befa85c5a3a6c22f');
-    // console.log(title, icon, cover, html);
-    return html;
+    const { title, icon, cover, html } = await NotionPageToHtml.convert("https://www.notion.so/asnunes/Simple-Page-Text-4d64bbc0634d4758befa85c5a3a6c22f");
+    console.log(title, icon, cover, html);
 }
