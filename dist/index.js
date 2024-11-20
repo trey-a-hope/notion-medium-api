@@ -9,7 +9,9 @@ const cors_1 = __importDefault(require("cors"));
 const express_rate_limit_1 = require("express-rate-limit");
 const { Client } = require('@notionhq/client');
 const router = express_1.default.Router();
+const notion_to_md_1 = require("notion-to-md");
 const notion = new Client({ auth: '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' });
+const n2m = new notion_to_md_1.NotionToMarkdown({ notionClient: notion });
 // Initialize Express application
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -60,40 +62,9 @@ app.post('/convert', async (req, res) => {
         // Return the converted HTML
         // return res.status(200).json(html);
         // const { pageId } = req.params;
-        const blocks = await notion.blocks.children.list({ block_id: '4d64bbc0634d4758befa85c5a3a6c22f' });
-        let html = '';
-        let inBulletedList = false;
-        let inNumberedList = false;
-        for (const block of blocks.results) {
-            if (block.type === 'bulleted_list_item') {
-                if (!inBulletedList) {
-                    html += '<ul>';
-                    inBulletedList = true;
-                }
-            }
-            else if (block.type === 'numbered_list_item') {
-                if (!inNumberedList) {
-                    html += '<ol>';
-                    inNumberedList = true;
-                }
-            }
-            else {
-                if (inBulletedList) {
-                    html += '</ul>';
-                    inBulletedList = false;
-                }
-                if (inNumberedList) {
-                    html += '</ol>';
-                    inNumberedList = false;
-                }
-            }
-            html += convertBlockToHtml(block);
-        }
-        if (inBulletedList)
-            html += '</ul>';
-        if (inNumberedList)
-            html += '</ol>';
-        res.status(200).send(html);
+        const mdblocks = await n2m.pageToMarkdown('4d64bbc0634d4758befa85c5a3a6c22f');
+        const mdString = n2m.toMarkdownString(mdblocks);
+        res.status(200).send(mdString);
     }
     catch (error) {
         // Log any conversion errors
