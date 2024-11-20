@@ -7,7 +7,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const express_rate_limit_1 = require("express-rate-limit");
-const NotionPageToHtml = require('notion-page-to-html');
+const { Client } = require('@notionhq/client');
+const router = express_1.default.Router();
+const notion = new Client({ auth: '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' });
 // Initialize Express application
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -54,10 +56,44 @@ app.post('/convert', async (req, res) => {
         // // Convert Notion blocks to Medium HTML format
         // const html = converter.convertToMediumHTML(notionData);
         // const html = await getPage();
-        const ress = await getPage();
+        // const ress = await getPage();
         // Return the converted HTML
         // return res.status(200).json(html);
-        return res.status(200).send(ress);
+        // const { pageId } = req.params;
+        const blocks = await notion.blocks.children.list({ block_id: '4d64bbc0634d4758befa85c5a3a6c22f' });
+        let html = '';
+        let inBulletedList = false;
+        let inNumberedList = false;
+        for (const block of blocks.results) {
+            if (block.type === 'bulleted_list_item') {
+                if (!inBulletedList) {
+                    html += '<ul>';
+                    inBulletedList = true;
+                }
+            }
+            else if (block.type === 'numbered_list_item') {
+                if (!inNumberedList) {
+                    html += '<ol>';
+                    inNumberedList = true;
+                }
+            }
+            else {
+                if (inBulletedList) {
+                    html += '</ul>';
+                    inBulletedList = false;
+                }
+                if (inNumberedList) {
+                    html += '</ol>';
+                    inNumberedList = false;
+                }
+            }
+            html += convertBlockToHtml(block);
+        }
+        if (inBulletedList)
+            html += '</ul>';
+        if (inNumberedList)
+            html += '</ol>';
+        res.status(200).send(html);
     }
     catch (error) {
         // Log any conversion errors
@@ -74,9 +110,38 @@ app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Test the API with:`);
 });
-async function getPage() {
-    // const { title, icon, cover, html } = await NotionPageToHtml.convert("https://www.notion.so/asnunes/Simple-Page-Text-4d64bbc0634d4758befa85c5a3a6c22f");
-    const res = await NotionPageToHtml.convert("https://www.notion.so/asnunes/Simple-Page-Text-4d64bbc0634d4758befa85c5a3a6c22f");
-    // console.log(title, icon, cover, html);
-    return 'OK BOY!';
-}
+const convertBlockToHtml = (block) => {
+    switch (block.type) {
+        case 'paragraph':
+            return block.paragraph ? `<p>${block.paragraph.rich_text.map(text => text.plain_text).join('')}</p>` : '';
+        case 'heading_1':
+            return block.heading_1 ? `<h1>${block.heading_1.rich_text.map(text => text.plain_text).join('')}</h1>` : '';
+        case 'heading_2':
+            return block.heading_2 ? `<h2>${block.heading_2.rich_text.map(text => text.plain_text).join('')}</h2>` : '';
+        case 'heading_3':
+            return block.heading_3 ? `<h3>${block.heading_3.rich_text.map(text => text.plain_text).join('')}</h3>` : '';
+        case 'bulleted_list_item':
+            return block.bulleted_list_item ? `<li>${block.bulleted_list_item.rich_text.map(text => text.plain_text).join('')}</li>` : '';
+        case 'numbered_list_item':
+            return block.numbered_list_item ? `<li>${block.numbered_list_item.rich_text.map(text => text.plain_text).join('')}</li>` : '';
+        case 'to_do':
+            if (!block.to_do)
+                return '';
+            const checked = block.to_do.checked ? 'checked' : '';
+            return `<div class="todo-item">
+        <input type="checkbox" ${checked} disabled>
+        <span>${block.to_do.rich_text.map(text => text.plain_text).join('')}</span>
+      </div>`;
+        case 'code':
+            if (!block.code)
+                return '';
+            return `<pre><code class="language-${block.code.language}">${block.code.rich_text.map(text => text.plain_text).join('')}</code></pre>`;
+        case 'image':
+            if (!block.image)
+                return '';
+            const url = block.image.type === 'external' ? block.image?.external?.url : block.image?.file?.url;
+            return url ? `<img src="${url}" alt="Notion image" />` : '';
+        default:
+            return '';
+    }
+};
