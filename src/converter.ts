@@ -3,7 +3,6 @@
 const { Client } = require('@notionhq/client');
 const notion = new Client({ auth: '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' });
 
-
 const richTextToHtml = (richText: any[]): string => {
   return richText.map(text => {
     let content = text.plain_text;
