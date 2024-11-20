@@ -7,7 +7,6 @@ const notion = new Client({ auth: 'ntn_218400634484NedMoEEFL5auYO7ZvRBgQHxcxXE89
 const app = express();
 const port = process.env.PORT || 3000;
 
-
 app.use(express.json({
   limit: '10mb',
   verify: (req: any, _res, buf) => {
