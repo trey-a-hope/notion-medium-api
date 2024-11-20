@@ -83,7 +83,7 @@ app.post('/convert', async (req, res) => {
 
     // Return error response with the received body for debugging
     return res.status(500).json({
-      error: 'Conversion failed',
+      error: error,
       receivedBody: req.body
     });
   }
