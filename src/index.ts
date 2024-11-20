@@ -74,9 +74,9 @@ app.post('/convert', async (req, res) => {
     // Return the converted HTML
     // return res.status(200).json(html);
     // const { pageId } = req.params;
-    const mdblocks = await n2m.pageToMarkdown('141515c4ebd880bdb52ccc888df6d202');
-    const mdString = n2m.toMarkdownString(mdblocks);
-    res.status(200).send(mdString);
+
+    const html = await getNestedBlocks('141515c4ebd880bdb52ccc888df6d202');
+    res.status(200).send(html);
   } catch (error) {
     // Log any conversion errors
     console.error('Error during conversion:', error);
@@ -133,37 +133,152 @@ interface NotionBlock {
 interface RichText {
   plain_text: string;
 }
+// Handle rich text to HTML, including styling
+const richTextToHtml = (richText: any[]): string => {
+  return richText.map(text => {
+    let content = text.plain_text;
 
-const convertBlockToHtml = (block: NotionBlock): string => {
+    // Apply text styling
+    if (text.annotations.bold) content = `<strong>${content}</strong>`;
+    if (text.annotations.italic) content = `<em>${content}</em>`;
+    if (text.annotations.strikethrough) content = `<del>${content}</del>`;
+    if (text.annotations.underline) content = `<u>${content}</u>`;
+    if (text.annotations.code) content = `<code>${content}</code>`;
+
+    // Handle links
+    if (text.href) content = `<a href="${text.href}">${content}</a>`;
+
+    return content;
+  }).join('');
+};
+
+const convertBlock = (block: any): string => {
   switch (block.type) {
     case 'paragraph':
-      return block.paragraph ? `<p>${block.paragraph.rich_text.map(text => text.plain_text).join('')}</p>` : '';
+      return `<p>${richTextToHtml(block.paragraph.rich_text)}</p>`;
+
     case 'heading_1':
-      return block.heading_1 ? `<h1>${block.heading_1.rich_text.map(text => text.plain_text).join('')}</h1>` : '';
+      return `<h1>${richTextToHtml(block.heading_1.rich_text)}</h1>`;
+
     case 'heading_2':
-      return block.heading_2 ? `<h2>${block.heading_2.rich_text.map(text => text.plain_text).join('')}</h2>` : '';
+      return `<h2>${richTextToHtml(block.heading_2.rich_text)}</h2>`;
+
     case 'heading_3':
-      return block.heading_3 ? `<h3>${block.heading_3.rich_text.map(text => text.plain_text).join('')}</h3>` : '';
+      return `<h3>${richTextToHtml(block.heading_3.rich_text)}</h3>`;
+
     case 'bulleted_list_item':
-      return block.bulleted_list_item ? `<li>${block.bulleted_list_item.rich_text.map(text => text.plain_text).join('')}</li>` : '';
+      return `<li>${richTextToHtml(block.bulleted_list_item.rich_text)}</li>`;
+
     case 'numbered_list_item':
-      return block.numbered_list_item ? `<li>${block.numbered_list_item.rich_text.map(text => text.plain_text).join('')}</li>` : '';
-    case 'to_do':
-      if (!block.to_do) return '';
-      const checked = block.to_do.checked ? 'checked' : '';
-      return `<div class="todo-item">
-        <input type="checkbox" ${checked} disabled>
-        <span>${block.to_do.rich_text.map(text => text.plain_text).join('')}</span>
-      </div>`;
+      return `<li>${richTextToHtml(block.numbered_list_item.rich_text)}</li>`;
+
     case 'code':
-      if (!block.code) return '';
-      return `<pre><code class="language-${block.code.language}">${block.code.rich_text.map(text => text.plain_text).join('')
+      return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
         }</code></pre>`;
+
+    case 'quote':
+      return `<blockquote>${richTextToHtml(block.quote.rich_text)}</blockquote>`;
+
+    case 'callout':
+      return `<div class="callout">
+        ${block.callout.icon?.emoji || ''}
+        ${richTextToHtml(block.callout.rich_text)}
+      </div>`;
+
     case 'image':
-      if (!block.image) return '';
-      const url = block.image.type === 'external' ? block.image?.external?.url : block.image?.file?.url;
-      return url ? `<img src="${url}" alt="Notion image" />` : '';
+      const imgUrl = block.image.type === 'external' ?
+        block.image.external.url :
+        block.image.file.url;
+      const caption = block.image.caption ?
+        richTextToHtml(block.image.caption) :
+        'Notion image';
+      return `<figure>
+        <img src="${imgUrl}" alt="${caption}" />
+        ${block.image.caption ? `<figcaption>${caption}</figcaption>` : ''}
+      </figure>`;
+
+    case 'video':
+      const videoUrl = block.video.type === 'external' ?
+        block.video.external.url :
+        block.video.file.url;
+      return `<video src="${videoUrl}" controls></video>`;
+
+    case 'divider':
+      return '<hr>';
+
+    case 'table':
+      return '<div class="table-wrapper">Table content</div>';
+
+    case 'column_list':
+      return '<div class="columns">Column content</div>';
+
     default:
       return '';
+  }
+};
+
+const getNestedBlocks = async (blockId: string): Promise<string> => {
+  try {
+    const { results } = await notion.blocks.children.list({ block_id: blockId });
+    let html = '';
+    let inBulletedList = false;
+    let inNumberedList = false;
+
+    for (const block of results) {
+      // Handle nested blocks recursively
+      if (block.has_children) {
+        const childContent = await getNestedBlocks(block.id);
+
+        // Attach child content to parent block appropriately
+        switch (block.type) {
+          case 'toggle':
+            html += `<details>
+              <summary>${richTextToHtml(block[block.type].rich_text)}</summary>
+              ${childContent}
+            </details>`;
+            continue;
+          case 'column_list':
+            html += `<div class="columns">${childContent}</div>`;
+            continue;
+          default:
+            // For other block types, append child content after the block
+            html += convertBlock(block) + childContent;
+            continue;
+        }
+      }
+
+      // Handle lists
+      if (block.type === 'bulleted_list_item') {
+        if (!inBulletedList) {
+          html += '<ul>';
+          inBulletedList = true;
+        }
+      } else if (block.type === 'numbered_list_item') {
+        if (!inNumberedList) {
+          html += '<ol>';
+          inNumberedList = true;
+        }
+      } else {
+        if (inBulletedList) {
+          html += '</ul>';
+          inBulletedList = false;
+        }
+        if (inNumberedList) {
+          html += '</ol>';
+          inNumberedList = false;
+        }
+      }
+
+      html += convertBlock(block);
+    }
+
+    // Close any open lists
+    if (inBulletedList) html += '</ul>';
+    if (inNumberedList) html += '</ol>';
+
+    return html;
+  } catch (error) {
+    console.error('Error fetching nested blocks:', error);
+    return '';
   }
 };
