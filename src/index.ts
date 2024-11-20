@@ -4,6 +4,7 @@ import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import { NotionBlock } from './types';
 import { NotionToMediumHTML } from './converter';
+const NotionPageToHtml = require('notion-page-to-html');
 
 // Initialize Express application
 const app = express();
@@ -51,21 +52,23 @@ app.get('/health', (_req, res) => {
 // Accepts Notion blocks and converts them to Medium-compatible HTML
 app.post('/convert', async (req, res) => {
   try {
-    // Initialize the converter
-    const converter = new NotionToMediumHTML();
-    
-    // Extract Notion blocks from request body
-    const notionData: NotionBlock[] = req.body;
-    
-    // Convert Notion blocks to Medium HTML format
-    const html = converter.convertToMediumHTML(notionData);
+    // // Initialize the converter
+    // const converter = new NotionToMediumHTML();
+
+    // // Extract Notion blocks from request body
+    // const notionData: NotionBlock[] = req.body;
+
+    // // Convert Notion blocks to Medium HTML format
+    // const html = converter.convertToMediumHTML(notionData);
+
+    const html = await getPage();
 
     // Return the converted HTML
     return res.status(200).json(html);
   } catch (error) {
     // Log any conversion errors
     console.error('Error during conversion:', error);
-    
+
     // Return error response with the received body for debugging
     return res.status(500).json({
       error: 'Conversion failed',
@@ -79,3 +82,8 @@ app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Test the API with:`);
 });
+
+async function getPage() {
+  const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/141515c4ebd880e58cf9e557bd3e6136?v=e5b4811a6d1e43408d68797a743b16a6&pvs=4');
+  console.log(title, icon, cover, html);
+}

@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const express_rate_limit_1 = require("express-rate-limit");
-const converter_1 = require("./converter");
+const NotionPageToHtml = require('notion-page-to-html');
 // Initialize Express application
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -47,12 +47,13 @@ app.get('/health', (_req, res) => {
 // Accepts Notion blocks and converts them to Medium-compatible HTML
 app.post('/convert', async (req, res) => {
     try {
-        // Initialize the converter
-        const converter = new converter_1.NotionToMediumHTML();
-        // Extract Notion blocks from request body
-        const notionData = req.body;
-        // Convert Notion blocks to Medium HTML format
-        const html = converter.convertToMediumHTML(notionData);
+        // // Initialize the converter
+        // const converter = new NotionToMediumHTML();
+        // // Extract Notion blocks from request body
+        // const notionData: NotionBlock[] = req.body;
+        // // Convert Notion blocks to Medium HTML format
+        // const html = converter.convertToMediumHTML(notionData);
+        const html = await getPage();
         // Return the converted HTML
         return res.status(200).json(html);
     }
@@ -71,3 +72,7 @@ app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Test the API with:`);
 });
+async function getPage() {
+    const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/141515c4ebd880e58cf9e557bd3e6136?v=e5b4811a6d1e43408d68797a743b16a6&pvs=4');
+    console.log(title, icon, cover, html);
+}
