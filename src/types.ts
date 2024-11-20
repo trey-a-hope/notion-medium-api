@@ -35,7 +35,7 @@ export interface NotionText {
 // Interface representing a block in Notion
 // Blocks are the fundamental units of content (paragraphs, headings, code blocks, etc.)
 export interface NotionBlock {
-  // Identifies the type of block (paragraph, heading_1, code, etc.)
+  // Identifies the type of block (paragraph, heading_1, heading_2, heading_3, code, etc.)
   type: string;
 
   // Optional paragraph block structure
@@ -47,6 +47,18 @@ export interface NotionBlock {
   // Optional heading level 1 block structure
   // Contains an array of rich text objects for the heading content
   heading_1?: {
+    rich_text: NotionText[];
+  };
+
+  // Optional heading level 2 block structure
+  // Contains an array of rich text objects for the heading content
+  heading_2?: {
+    rich_text: NotionText[];
+  };
+
+  // Optional heading level 3 block structure
+  // Contains an array of rich text objects for the heading content
+  heading_3?: {
     rich_text: NotionText[];
   };
 

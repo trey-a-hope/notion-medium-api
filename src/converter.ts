@@ -34,6 +34,12 @@ export class NotionToMediumHTML {
       case 'heading_1':
         return `<h1>${this.processText(block.heading_1?.rich_text || [])}</h1>`;
 
+      case 'heading_2':
+        return `<h2>${this.processText(block.heading_2?.rich_text || [])}</h2>`;
+
+      case 'heading_3':
+        return `<h3>${this.processText(block.heading_3?.rich_text || [])}</h3>`;
+
       case 'code':
         return this.processCode(block.code);
 
