@@ -85,5 +85,6 @@ app.listen(port, () => {
 
 async function getPage() {
   const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/141515c4ebd880e58cf9e557bd3e6136?v=e5b4811a6d1e43408d68797a743b16a6&pvs=4');
-  console.log(title, icon, cover, html);
+  // console.log(title, icon, cover, html);
+  return title;
 }
