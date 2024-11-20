@@ -59,15 +59,30 @@ class NotionToMediumHTML {
     }
     /**
      * Processes a code block with language-specific formatting
+     * Now handles formatting within code blocks
      * @param code Code block data containing content and language
      * @returns HTML string with formatted code content
      */
     processCode(code) {
-        if (!code?.rich_text?.[0])
+        if (!code?.rich_text || code.rich_text.length === 0)
             return '';
-        const content = code.rich_text[0].plain_text;
+        // Process all rich text segments in the code block
+        const content = code.rich_text
+            .map((text) => this.formatCodeText(text))
+            .join('');
         const language = code.language || '';
-        return `<pre data-language="${language}"><code>${html_utils_1.HtmlUtils.escapeHtml(content)}</code></pre>`;
+        return `<pre data-language="${language}"><code>${content}</code></pre>`;
+    }
+    /**
+     * Special formatting for code block content
+     * Similar to formatText but only applies relevant code formatting
+     * @param text Rich text segment within a code block
+     * @returns Formatted code content
+     */
+    formatCodeText(text) {
+        // For code blocks, we typically just want the escaped content
+        // Most formatting (bold, italic, etc.) shouldn't apply inside code blocks
+        return html_utils_1.HtmlUtils.escapeHtml(text.text.content);
     }
     /**
      * Applies text formatting annotations to a single text segment
