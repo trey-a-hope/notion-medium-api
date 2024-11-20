@@ -26,18 +26,15 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Configure rate limiting
-// Allows 100 requests per 15 minutes window per IP
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100
 });
 
-// Apply rate limiting to all routes
 app.use(limiter);
 
-// Health check endpoint
-// Used for monitoring and infrastructure checks
+
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'OK' });
 });
