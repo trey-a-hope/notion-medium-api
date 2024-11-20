@@ -41,7 +41,8 @@ export class NotionToMediumHTML {
         return `<h3>${this.processText(block.heading_3?.rich_text || [])}</h3>`;
 
       case 'code':
-        return this.processCode(block.code);
+        return this.transformCodeBlock(block.code);
+      // return this.processCode(block.code);
 
       default:
         return ''; // Unsupported block types are skipped
@@ -64,6 +65,36 @@ export class NotionToMediumHTML {
    */
   private processText(richText: NotionText[]): string {
     return richText.map(text => text.plain_text).join('');
+  }
+
+  private transformCodeBlock(block: any) {
+    // Only process if it's a code block
+    if (block.type !== 'code') return block;
+
+    // Reconstruct the code block structure
+    return {
+      type: 'code',
+      code: {
+        rich_text: [{
+          type: 'text',
+          text: {
+            content: block.plain_text || '',
+            link: null
+          },
+          annotations: {
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+            code: true,
+            color: 'default'
+          },
+          plain_text: block.plain_text || ''
+        }],
+        language: block.language || 'plain',
+        caption: []
+      }
+    };
   }
 
   /**
