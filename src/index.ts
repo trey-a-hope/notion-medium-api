@@ -84,7 +84,7 @@ app.listen(port, () => {
 });
 
 async function getPage() {
-  const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/141515c4ebd880e58cf9e557bd3e6136?v=e5b4811a6d1e43408d68797a743b16a6&pvs=4');
+  const { title, icon, cover, html } = await NotionPageToHtml.convert('https://www.notion.so/asnunes/Simple-Page-Text-4d64bbc0634d4758befa85c5a3a6c22f');
   // console.log(title, icon, cover, html);
   return title;
 }
