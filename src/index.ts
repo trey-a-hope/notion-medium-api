@@ -7,12 +7,12 @@ const notion = new Client({ auth: 'ntn_218400634484NedMoEEFL5auYO7ZvRBgQHxcxXE89
 const app = express();
 const port = process.env.PORT || 3000;
 
-// app.use(express.json({
-//   limit: '10mb',
-//   verify: (req: any, _res, buf) => {
-//     req.rawBody = buf.toString();
-//   }
-// }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
 
 app.use(cors());
 
@@ -25,10 +25,6 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log(`Test the API with:`);
-});
 
 // const limiter = rateLimit({
 //   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -58,7 +54,10 @@ app.post('/convert', async (req, res) => {
   }
 });
 
-
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+  console.log(`Test the API with:`);
+});
 
 
 const richTextToHtml = (richText: any[]): string => {
