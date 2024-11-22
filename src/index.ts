@@ -87,12 +87,18 @@ const convertBlock = (block: any): string => {
     case 'numbered_list_item':
       return `<li>${richTextToHtml(block.numbered_list_item.rich_text)}</li>`;
 
+    // case 'code':
+    //   return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
+    //     }</code></pre>`;
+
     case 'code':
-      return `<pre data-language="dart"><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
-        }</code></pre>`;
+      return '<pre>```dart' +
+        // your dart code here
+        richTextToHtml(block.code.rich_text)
+        + '```</pre>';
 
     case 'quote':
-      return `<blockquote>${richTextToHtml(block.quote.rich_text)}</blockquote>`;
+      return `< blockquote > ${richTextToHtml(block.quote.rich_text)} </blockquote>`;
 
     case 'callout':
       return `<div class="callout">
