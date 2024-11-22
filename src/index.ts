@@ -15,7 +15,6 @@ app.use(express.json({
   }
 }));
 
-
 app.use((req, _res, next) => {
   console.log('=== Request Details ===');
   console.log('Headers:', req.headers);
@@ -49,8 +48,6 @@ app.post('/convert', async (req, res) => {
     });
   }
 });
-
-
 
 const richTextToHtml = (richText: any[]): string => {
   return richText.map(text => {
@@ -91,7 +88,7 @@ const convertBlock = (block: any): string => {
       return `<li>${richTextToHtml(block.numbered_list_item.rich_text)}</li>`;
 
     case 'code':
-      return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
+      return `<pre data-language="dart"><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
         }</code></pre>`;
 
     case 'quote':
