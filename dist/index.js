@@ -82,7 +82,7 @@ const convertBlock = (block) => {
         //   return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
         //     }</code></pre>`;
         case 'code':
-            return `<pre><code>${block.code.language ? '```' + block.code.language + '\n' : ''}${richTextToHtml(block.code.rich_text)}${block.code.language ? '\n```' : ''}</code></pre>`;
+            return `<pre>${block.code.language ? '```' + block.code.language + '\n' : ''}${richTextToHtml(block.code.rich_text)}${block.code.language ? '\n```' : ''}</pre>`;
         case 'quote':
             return `< blockquote > ${richTextToHtml(block.quote.rich_text)} </blockquote>`;
         case 'callout':
