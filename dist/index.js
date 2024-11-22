@@ -78,11 +78,10 @@ const convertBlock = (block) => {
             return `<li>${richTextToHtml(block.bulleted_list_item.rich_text)}</li>`;
         case 'numbered_list_item':
             return `<li>${richTextToHtml(block.numbered_list_item.rich_text)}</li>`;
-        // case 'code':
-        //   return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)
-        //     }</code></pre>`;
         case 'code':
-            return `<pre name="code" class="dart">${richTextToHtml(block.code.rich_text)}</pre>`;
+            return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)}</code></pre>`;
+        // case 'code':
+        //   return `<pre name="code" class="dart">${richTextToHtml(block.code.rich_text)}</pre>`;
         case 'quote':
             return `< blockquote > ${richTextToHtml(block.quote.rich_text)} </blockquote>`;
         case 'callout':
