@@ -6,16 +6,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const { Client } = require('@notionhq/client');
+// Initialize Notion client with API key
 const notion = new Client({ auth: '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' });
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
+// Enable CORS for cross-origin requests
 app.use((0, cors_1.default)());
+// Configure JSON parsing middleware with 10mb limit
+// Store raw body for potential webhook verification
 app.use(express_1.default.json({
     limit: '10mb',
     verify: (req, _res, buf) => {
         req.rawBody = buf.toString();
     }
 }));
+// Debugging middleware to log request details
 app.use((req, _res, next) => {
     console.log('=== Request Details ===');
     console.log('Headers:', req.headers);
@@ -23,13 +28,19 @@ app.use((req, _res, next) => {
     console.log('====================');
     next();
 });
+// Start server and log connection details
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Test the API with:`);
 });
+// Health check endpoint
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'OK' });
 });
+/**
+ * Convert Notion page to HTML endpoint
+ * Expects request body with { pageId: string }
+ */
 app.post('/convert', async (req, res) => {
     try {
         const pageId = req.body.pageId;
@@ -44,10 +55,16 @@ app.post('/convert', async (req, res) => {
         });
     }
 });
+/**
+ * Converts Notion's rich text array to HTML
+ * Handles formatting like bold, italic, strike-through, etc.
+ * @param richText - Array of Notion rich text objects
+ * @returns HTML string with appropriate formatting tags
+ */
 const richTextToHtml = (richText) => {
     return richText.map(text => {
         let content = text.plain_text;
-        // Apply text styling
+        // Apply text formatting annotations
         if (text.annotations.bold)
             content = `<strong>${content}</strong>`;
         if (text.annotations.italic)
@@ -64,6 +81,11 @@ const richTextToHtml = (richText) => {
         return content;
     }).join('');
 };
+/**
+ * Converts a single Notion block to its HTML equivalent
+ * @param block - Notion block object
+ * @returns HTML string representation of the block
+ */
 const convertBlock = (block) => {
     switch (block.type) {
         case 'paragraph':
@@ -81,13 +103,14 @@ const convertBlock = (block) => {
         case 'code':
             return `<pre><code class="language-${block.code.language}">${richTextToHtml(block.code.rich_text)}</code></pre>`;
         case 'quote':
-            return `< blockquote > ${richTextToHtml(block.quote.rich_text)} </blockquote>`;
+            return `<blockquote>${richTextToHtml(block.quote.rich_text)}</blockquote>`;
         case 'callout':
             return `<div class="callout">
         ${block.callout.icon?.emoji || ''}
         ${richTextToHtml(block.callout.rich_text)}
       </div>`;
         case 'image':
+            // Handle both external and internal images
             const imgUrl = block.image.type === 'external' ?
                 block.image.external.url :
                 block.image.file.url;
@@ -113,6 +136,12 @@ const convertBlock = (block) => {
             return '';
     }
 };
+/**
+ * Recursively fetches and converts nested Notion blocks to HTML
+ * Handles special cases like lists and toggles
+ * @param blockId - ID of the Notion block to process
+ * @returns Promise resolving to HTML string
+ */
 const getNestedBlocks = async (blockId) => {
     try {
         const { results } = await notion.blocks.children.list({ block_id: blockId });
@@ -120,12 +149,12 @@ const getNestedBlocks = async (blockId) => {
         let inBulletedList = false;
         let inNumberedList = false;
         for (const block of results) {
-            // Handle nested blocks recursively
+            // Handle nested blocks
             if (block.has_children) {
                 const childContent = await getNestedBlocks(block.id);
-                // Attach child content to parent block appropriately
                 switch (block.type) {
                     case 'toggle':
+                        // Create expandable details/summary element for toggles
                         html += `<details>
               <summary>${richTextToHtml(block[block.type].rich_text)}</summary>
               ${childContent}
@@ -140,7 +169,7 @@ const getNestedBlocks = async (blockId) => {
                         continue;
                 }
             }
-            // Handle lists
+            // Handle list containers
             if (block.type === 'bulleted_list_item') {
                 if (!inBulletedList) {
                     html += '<ul>';
@@ -154,6 +183,7 @@ const getNestedBlocks = async (blockId) => {
                 }
             }
             else {
+                // Close any open lists when encountering non-list blocks
                 if (inBulletedList) {
                     html += '</ul>';
                     inBulletedList = false;
@@ -165,7 +195,7 @@ const getNestedBlocks = async (blockId) => {
             }
             html += convertBlock(block);
         }
-        // Close any open lists
+        // Close any remaining open lists
         if (inBulletedList)
             html += '</ul>';
         if (inNumberedList)
