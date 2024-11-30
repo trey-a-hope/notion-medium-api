@@ -144,17 +144,27 @@ const convertBlock = (block) => {
  */
 const getNestedBlocks = async (blockId) => {
     try {
-        const { results } = await notion.blocks.children.list({ block_id: blockId });
+        let allBlocks = [];
+        let cursor = undefined;
+        // Fetch all blocks using pagination
+        do {
+            const response = await notion.blocks.children.list({
+                block_id: blockId,
+                start_cursor: cursor,
+                page_size: 100, // Max page size
+            });
+            allBlocks = [...allBlocks, ...response.results];
+            cursor = response.next_cursor || undefined;
+        } while (cursor);
         let html = '';
         let inBulletedList = false;
         let inNumberedList = false;
-        for (const block of results) {
+        for (const block of allBlocks) {
             // Handle nested blocks
             if (block.has_children) {
                 const childContent = await getNestedBlocks(block.id);
                 switch (block.type) {
                     case 'toggle':
-                        // Create expandable details/summary element for toggles
                         html += `<details>
               <summary>${richTextToHtml(block[block.type].rich_text)}</summary>
               ${childContent}
@@ -164,7 +174,6 @@ const getNestedBlocks = async (blockId) => {
                         html += `<div class="columns">${childContent}</div>`;
                         continue;
                     default:
-                        // For other block types, append child content after the block
                         html += convertBlock(block) + childContent;
                         continue;
                 }
@@ -204,6 +213,6 @@ const getNestedBlocks = async (blockId) => {
     }
     catch (error) {
         console.error('Error fetching nested blocks:', error);
-        return '';
+        throw error;
     }
 };

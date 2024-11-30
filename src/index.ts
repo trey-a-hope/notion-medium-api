@@ -152,6 +152,19 @@ const convertBlock = (block: any): string => {
   }
 };
 
+interface NotionBlock {
+  id: string;
+  type: string;
+  has_children: boolean;
+  [key: string]: any; // For flexible block type properties
+}
+
+interface NotionResponse {
+  results: NotionBlock[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
 /**
  * Recursively fetches and converts nested Notion blocks to HTML
  * Handles special cases like lists and toggles
@@ -160,19 +173,32 @@ const convertBlock = (block: any): string => {
  */
 const getNestedBlocks = async (blockId: string): Promise<string> => {
   try {
-    const { results } = await notion.blocks.children.list({ block_id: blockId });
+    let allBlocks: NotionBlock[] = [];
+    let cursor: string | undefined = undefined;
+    
+    // Fetch all blocks using pagination
+    do {
+      const response: NotionResponse = await notion.blocks.children.list({
+        block_id: blockId,
+        start_cursor: cursor,
+        page_size: 100, // Max page size
+      });
+      
+      allBlocks = [...allBlocks, ...response.results];
+      cursor = response.next_cursor || undefined;
+    } while (cursor);
+
     let html = '';
     let inBulletedList = false;
     let inNumberedList = false;
 
-    for (const block of results) {
+    for (const block of allBlocks) {
       // Handle nested blocks
       if (block.has_children) {
         const childContent = await getNestedBlocks(block.id);
 
         switch (block.type) {
           case 'toggle':
-            // Create expandable details/summary element for toggles
             html += `<details>
               <summary>${richTextToHtml(block[block.type].rich_text)}</summary>
               ${childContent}
@@ -182,7 +208,6 @@ const getNestedBlocks = async (blockId: string): Promise<string> => {
             html += `<div class="columns">${childContent}</div>`;
             continue;
           default:
-            // For other block types, append child content after the block
             html += convertBlock(block) + childContent;
             continue;
         }
@@ -221,6 +246,6 @@ const getNestedBlocks = async (blockId: string): Promise<string> => {
     return html;
   } catch (error) {
     console.error('Error fetching nested blocks:', error);
-    return '';
+    throw error;
   }
-};
+}; 
