@@ -7,7 +7,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const { Client } = require('@notionhq/client');
 // Initialize Notion client with API key
-const notion = new Client({ auth: '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' });
+// const notion = new Client({ auth: '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' });
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 // Enable CORS for cross-origin requests
@@ -44,7 +44,14 @@ app.get('/health', (_req, res) => {
 app.post('/convert', async (req, res) => {
     try {
         const pageId = req.body.pageId;
-        const html = await getNestedBlocks(`${pageId}`);
+        const notionKey = req.body.notionKey;
+        if (!notionKey) {
+            return res.status(401).json({
+                error: 'Missing Notion integration key. Create one at https://www.notion.so/my-integrations'
+            });
+        }
+        const notion = new Client({ auth: notionKey });
+        const html = await getNestedBlocks(`${pageId}`, notion);
         res.status(200).send(html);
     }
     catch (error) {
@@ -142,7 +149,7 @@ const convertBlock = (block) => {
  * @param blockId - ID of the Notion block to process
  * @returns Promise resolving to HTML string
  */
-const getNestedBlocks = async (blockId) => {
+const getNestedBlocks = async (blockId, notion) => {
     try {
         let allBlocks = [];
         let cursor = undefined;
@@ -162,7 +169,7 @@ const getNestedBlocks = async (blockId) => {
         for (const block of allBlocks) {
             // Handle nested blocks
             if (block.has_children) {
-                const childContent = await getNestedBlocks(block.id);
+                const childContent = await getNestedBlocks(block.id, notion);
                 switch (block.type) {
                     case 'toggle':
                         html += `<details>
